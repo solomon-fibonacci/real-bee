@@ -1,0 +1,20 @@
+# Core dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+asyncpg>=0.29.0
+redis>=5.0.0
+
+# Optional dependencies for full functionality
+# Uncomment to enable multimodal search:
+# torch>=2.0.0
+# torchvision>=0.15.0
+# transformers>=4.30.0
+# Pillow>=10.0.0
+# faiss-cpu>=1.7.4  # or faiss-gpu for GPU support
+
+# Development dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0
+websockets>=12.0
