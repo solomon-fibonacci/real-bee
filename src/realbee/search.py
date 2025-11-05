@@ -3,12 +3,19 @@ Multimodal search engine using CLIP and FAISS
 """
 import asyncio
 from typing import Any, Dict, List, Optional, Tuple
-import numpy as np
 
 from .core import FrameworkConfig, IndexStrategy
 from .exceptions import SearchException
 from .models import SearchRequest, SearchResult
 from .utils import run_in_threadpool
+
+# Optional dependencies - only import if available
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None  # type: ignore
 
 
 class SearchEngine:
@@ -63,7 +70,7 @@ class SearchEngine:
         self.id_maps[entity_name] = []
         print(f"Created index for {entity_name} (placeholder)")
 
-    async def encode_text(self, text: str) -> np.ndarray:
+    async def encode_text(self, text: str):
         """
         Encode text to embedding vector.
 
@@ -74,9 +81,14 @@ class SearchEngine:
         return embedding / np.linalg.norm(embedding)  # L2 normalize
         """
         # Placeholder: return random vector
-        return np.random.rand(self.config.faiss_dimension).astype(np.float32)
+        if HAS_NUMPY:
+            return np.random.rand(self.config.faiss_dimension).astype(np.float32)
+        else:
+            # Return list instead of numpy array when numpy not available
+            import random
+            return [random.random() for _ in range(self.config.faiss_dimension)]
 
-    async def encode_image(self, image_url: str) -> np.ndarray:
+    async def encode_image(self, image_url: str):
         """
         Encode image to embedding vector.
 
@@ -93,7 +105,11 @@ class SearchEngine:
         return embedding / np.linalg.norm(embedding)  # L2 normalize
         """
         # Placeholder: return random vector
-        return np.random.rand(self.config.faiss_dimension).astype(np.float32)
+        if HAS_NUMPY:
+            return np.random.rand(self.config.faiss_dimension).astype(np.float32)
+        else:
+            import random
+            return [random.random() for _ in range(self.config.faiss_dimension)]
 
     async def add_to_index(
         self,
@@ -133,7 +149,14 @@ class SearchEngine:
 
             if embeddings:
                 # Average embeddings
-                final_embedding = np.mean(embeddings, axis=0)
+                if HAS_NUMPY:
+                    final_embedding = np.mean(embeddings, axis=0)
+                else:
+                    # Manual averaging without numpy
+                    final_embedding = [
+                        sum(emb[i] for emb in embeddings) / len(embeddings)
+                        for i in range(len(embeddings[0]))
+                    ]
 
                 # Add to index (placeholder)
                 self.indices[entity_name]["vectors"].append(final_embedding)
@@ -186,9 +209,22 @@ class SearchEngine:
             if not index_data["vectors"]:
                 return []
 
-            vectors = np.array(index_data["vectors"])
-            similarities = np.dot(vectors, query_vector)
-            top_k_indices = np.argsort(similarities)[::-1][:request.k]
+            if HAS_NUMPY:
+                vectors = np.array(index_data["vectors"])
+                similarities = np.dot(vectors, query_vector)
+                top_k_indices = np.argsort(similarities)[::-1][:request.k]
+            else:
+                # Manual dot product and sorting without numpy
+                vectors = index_data["vectors"]
+                similarities = [
+                    sum(v[i] * query_vector[i] for i in range(len(query_vector)))
+                    for v in vectors
+                ]
+                top_k_indices = sorted(
+                    range(len(similarities)),
+                    key=lambda i: similarities[i],
+                    reverse=True
+                )[:request.k]
 
             results = []
             for rank, idx in enumerate(top_k_indices):

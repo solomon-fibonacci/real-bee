@@ -224,7 +224,7 @@ class TestSearchableDecorator:
         class User(BaseModel):
             name: str
 
-        assert Product.Config.vector_fields == []
+        assert User.Config.vector_fields == []
 
     def test_searchable_with_existing_config(self):
         """Test that decorator doesn't override existing Config"""

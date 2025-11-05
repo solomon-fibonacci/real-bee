@@ -150,6 +150,10 @@ class MockRedis:
             else:
                 callback(message)
 
+    def pubsub(self):
+        """Return MockPubSub instance"""
+        return MockPubSub(self, ())
+
     async def subscribe(self, *channels: str):
         """Mock subscribe operation"""
         return MockPubSub(self, channels)
