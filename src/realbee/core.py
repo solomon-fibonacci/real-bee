@@ -1,13 +1,15 @@
 """
 Core configuration and base classes for real-bee framework
 """
-from typing import Optional, List, Any
+
+from typing import Any
 from enum import Enum
 from pydantic import BaseModel, Field
 
 
 class IndexStrategy(str, Enum):
     """FAISS index strategies"""
+
     FLAT = "IndexFlatIP"  # Exact search, inner product
     IVF_FLAT = "IndexIVFFlat"  # Inverted file with flat quantizer
     IVF_PQ = "IndexIVFPQ"  # Inverted file with product quantization
@@ -20,18 +22,25 @@ class FrameworkConfig(BaseModel):
     # Database Configuration
     postgres_url: str = Field(
         default="postgresql://postgres:postgres@localhost:5432/realbee",
-        description="PostgreSQL connection URL"
+        description="PostgreSQL connection URL",
     )
-    postgres_pool_size: int = Field(default=20, ge=1, description="Database connection pool size")
-    postgres_max_overflow: int = Field(default=10, ge=0, description="Max overflow connections")
+    postgres_pool_size: int = Field(
+        default=20, ge=1, description="Database connection pool size"
+    )
+    postgres_max_overflow: int = Field(
+        default=10, ge=0, description="Max overflow connections"
+    )
 
     # Redis Configuration
     redis_url: str = Field(
-        default="redis://localhost:6379/0",
-        description="Redis connection URL"
+        default="redis://localhost:6379/0", description="Redis connection URL"
     )
-    redis_pool_size: int = Field(default=50, ge=1, description="Redis connection pool size")
-    redis_decode_responses: bool = Field(default=True, description="Decode Redis responses")
+    redis_pool_size: int = Field(
+        default=50, ge=1, description="Redis connection pool size"
+    )
+    redis_decode_responses: bool = Field(
+        default=True, description="Decode Redis responses"
+    )
 
     # Cache Configuration
     cache_enabled: bool = Field(default=True, description="Enable caching")
@@ -40,29 +49,44 @@ class FrameworkConfig(BaseModel):
 
     # FAISS Configuration
     faiss_index_type: IndexStrategy = Field(
-        default=IndexStrategy.FLAT,
-        description="FAISS index type"
+        default=IndexStrategy.FLAT, description="FAISS index type"
     )
     faiss_dimension: int = Field(default=512, ge=1, description="Embedding dimension")
-    faiss_nprobe: int = Field(default=10, ge=1, description="Number of probes for IVF indices")
-    faiss_nlist: int = Field(default=100, ge=1, description="Number of clusters for IVF indices")
+    faiss_nprobe: int = Field(
+        default=10, ge=1, description="Number of probes for IVF indices"
+    )
+    faiss_nlist: int = Field(
+        default=100, ge=1, description="Number of clusters for IVF indices"
+    )
 
     # CLIP Configuration
     clip_model: str = Field(default="ViT-B/32", description="CLIP model variant")
     clip_device: str = Field(default="cpu", description="Device for CLIP (cpu/cuda)")
-    clip_batch_size: int = Field(default=32, ge=1, description="Batch size for CLIP encoding")
+    clip_batch_size: int = Field(
+        default=32, ge=1, description="Batch size for CLIP encoding"
+    )
 
     # WebSocket Configuration
-    ws_heartbeat_interval: int = Field(default=30, ge=1, description="WebSocket heartbeat interval (seconds)")
-    ws_max_connections: int = Field(default=10000, ge=1, description="Maximum WebSocket connections")
-    ws_message_queue_size: int = Field(default=1000, ge=1, description="WebSocket message queue size")
+    ws_heartbeat_interval: int = Field(
+        default=30, ge=1, description="WebSocket heartbeat interval (seconds)"
+    )
+    ws_max_connections: int = Field(
+        default=10000, ge=1, description="Maximum WebSocket connections"
+    )
+    ws_message_queue_size: int = Field(
+        default=1000, ge=1, description="WebSocket message queue size"
+    )
 
     # Performance Configuration
     batch_size: int = Field(default=100, ge=1, description="Batch operation size")
-    max_concurrent_tasks: int = Field(default=50, ge=1, description="Maximum concurrent async tasks")
+    max_concurrent_tasks: int = Field(
+        default=50, ge=1, description="Maximum concurrent async tasks"
+    )
 
     # Event Bus Configuration
-    event_history_size: int = Field(default=1000, ge=0, description="Number of events to keep in history")
+    event_history_size: int = Field(
+        default=1000, ge=0, description="Number of events to keep in history"
+    )
     event_ttl: int = Field(default=3600, ge=0, description="Event TTL in seconds")
 
     class Config:
@@ -156,9 +180,11 @@ def searchable(*fields: str):
             description: str
             image_url: str
     """
+
     def decorator(cls):
         if not hasattr(cls, "Config"):
             cls.Config = type("Config", (), {})
         cls.Config.vector_fields = list(fields)
         return cls
+
     return decorator

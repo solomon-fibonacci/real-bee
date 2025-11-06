@@ -1,6 +1,7 @@
 """
 Event bus for pub/sub system
 """
+
 import asyncio
 from typing import Callable, Dict, List, Optional
 from datetime import datetime
@@ -46,7 +47,7 @@ class EventBus:
         entity_type: str,
         event_type: EventType,
         data: dict,
-        entity_id: Optional[int] = None
+        entity_id: Optional[int] = None,
     ) -> Event:
         """
         Emit an event.
@@ -66,7 +67,7 @@ class EventBus:
             entity_id=entity_id,
             event_type=event_type,
             data=data,
-            timestamp=datetime.utcnow()
+            timestamp=datetime.utcnow(),
         )
 
         # Add to history
@@ -85,10 +86,7 @@ class EventBus:
         return event
 
     async def _notify_subscribers(
-        self,
-        entity_type: str,
-        event_type: EventType,
-        event: Event
+        self, entity_type: str, event_type: EventType, event: Event
     ):
         """Notify local subscribers"""
         # Notify entity-specific subscribers
@@ -128,6 +126,7 @@ class EventBus:
             async def on_product_event(event: Event):
                 print(f"Product event: {event.event_type}")
         """
+
         def decorator(func: Callable):
             if event_type:
                 key = f"{entity_type}:{event_type.value}"
@@ -140,10 +139,7 @@ class EventBus:
         return decorator
 
     def subscribe(
-        self,
-        entity_type: str,
-        event_type: Optional[EventType],
-        callback: Callable
+        self, entity_type: str, event_type: Optional[EventType], callback: Callable
     ):
         """
         Subscribe to events programmatically.
@@ -161,10 +157,7 @@ class EventBus:
         self.subscribers[key].append(callback)
 
     def unsubscribe(
-        self,
-        entity_type: str,
-        event_type: Optional[EventType],
-        callback: Callable
+        self, entity_type: str, event_type: Optional[EventType], callback: Callable
     ):
         """Unsubscribe from events"""
         if event_type:
@@ -179,7 +172,7 @@ class EventBus:
         """Background task to listen for Redis pub/sub events"""
         try:
             # Subscribe to all event channels
-            pubsub = await self.cache.subscribe("events:*")
+            _pubsub = await self.cache.subscribe("events:*")  # noqa: F841
 
             while self._listening:
                 message = await self.cache.get_message()
@@ -187,9 +180,7 @@ class EventBus:
                     try:
                         event = Event(**message)
                         await self._notify_subscribers(
-                            event.entity_type,
-                            event.event_type,
-                            event
+                            event.entity_type, event.event_type, event
                         )
                     except Exception as e:
                         print(f"Error processing event: {e}")
@@ -202,9 +193,7 @@ class EventBus:
             print(f"Error in event listen loop: {e}")
 
     def get_recent_events(
-        self,
-        entity_type: Optional[str] = None,
-        limit: int = 100
+        self, entity_type: Optional[str] = None, limit: int = 100
     ) -> List[Event]:
         """Get recent events from history"""
         events = list(self.event_history)

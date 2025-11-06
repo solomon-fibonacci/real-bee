@@ -1,14 +1,13 @@
 """
 WebSocket connection manager for real-time updates
 """
+
 import asyncio
-import json
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 from collections import defaultdict
 
-from fastapi import WebSocket, WebSocketDisconnect
-from pydantic import ValidationError
+from fastapi import WebSocket
 
 from .models import WebSocketMessage, Event
 from .exceptions import WebSocketException
@@ -51,7 +50,7 @@ class WebSocketManager:
         self.connection_metadata[websocket] = {
             "entity_name": entity_name,
             "connected_at": datetime.utcnow(),
-            "last_heartbeat": datetime.utcnow()
+            "last_heartbeat": datetime.utcnow(),
         }
         self.total_connections += 1
 
@@ -109,10 +108,7 @@ class WebSocketManager:
         Args:
             event: Event to broadcast
         """
-        message = WebSocketMessage(
-            type="event",
-            data=event.model_dump()
-        )
+        message = WebSocketMessage(type="event", data=event.model_dump())
         await self.broadcast_to_entity(event.entity_type, message)
 
     async def send_to_connection(self, websocket: WebSocket, message: WebSocketMessage):
@@ -145,13 +141,12 @@ class WebSocketManager:
 
                 # Send ping
                 ping_message = WebSocketMessage(
-                    type="ping",
-                    data={"timestamp": datetime.utcnow().isoformat()}
+                    type="ping", data={"timestamp": datetime.utcnow().isoformat()}
                 )
 
                 try:
                     await websocket.send_json(ping_message.model_dump())
-                except:
+                except Exception:
                     # Connection closed
                     self.disconnect(websocket, entity_name)
                     break
@@ -159,11 +154,7 @@ class WebSocketManager:
         except asyncio.CancelledError:
             pass
 
-    async def handle_client_message(
-        self,
-        websocket: WebSocket,
-        message: dict
-    ):
+    async def handle_client_message(self, websocket: WebSocket, message: dict):
         """
         Handle incoming message from client.
 
@@ -176,19 +167,22 @@ class WebSocketManager:
         if msg_type == "ping":
             # Respond with pong
             pong_message = WebSocketMessage(
-                type="pong",
-                data={"timestamp": datetime.utcnow().isoformat()}
+                type="pong", data={"timestamp": datetime.utcnow().isoformat()}
             )
             await self.send_to_connection(websocket, pong_message)
 
             # Update last heartbeat
             if websocket in self.connection_metadata:
-                self.connection_metadata[websocket]["last_heartbeat"] = datetime.utcnow()
+                self.connection_metadata[websocket][
+                    "last_heartbeat"
+                ] = datetime.utcnow()
 
         elif msg_type == "pong":
             # Update last heartbeat
             if websocket in self.connection_metadata:
-                self.connection_metadata[websocket]["last_heartbeat"] = datetime.utcnow()
+                self.connection_metadata[websocket][
+                    "last_heartbeat"
+                ] = datetime.utcnow()
 
     def get_stats(self) -> Dict:
         """
@@ -201,10 +195,9 @@ class WebSocketManager:
             "total_connections": self.total_connections,
             "total_rooms": len(self.connections),
             "connections_by_entity": {
-                entity: len(conns)
-                for entity, conns in self.connections.items()
+                entity: len(conns) for entity, conns in self.connections.items()
             },
-            "max_connections": self.max_connections
+            "max_connections": self.max_connections,
         }
 
     def get_connection_info(self, websocket: WebSocket) -> Optional[Dict]:
@@ -225,6 +218,6 @@ class WebSocketManager:
             for connection in connections.copy():
                 try:
                     await connection.close()
-                except:
+                except Exception:
                     pass
                 self.disconnect(connection, entity_name)

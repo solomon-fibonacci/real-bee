@@ -25,13 +25,11 @@ __all__ = [
     "EntityHooks",
     "IndexStrategy",
     "CRUDFramework",
-
     # Models
     "Event",
     "EventType",
     "SearchRequest",
     "SearchResult",
-
     # Exceptions
     "RealBeeException",
     "EntityNotFoundException",

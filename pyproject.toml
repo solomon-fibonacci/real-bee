@@ -45,8 +45,17 @@ search = [
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-timeout>=2.1.0",
+    "pytest-xdist>=3.3.0",
     "httpx>=0.25.0",
     "websockets>=12.0",
+    "faker>=20.0.0",
+    "ruff>=0.1.0",
+    "black>=23.0.0",
+    "mypy>=1.5.0",
+    "bandit>=1.7.0",
+    "coverage>=7.3.0",
 ]
 all = [
     "real-bee[search,dev]",

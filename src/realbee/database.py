@@ -1,7 +1,7 @@
 """
 Database manager for PostgreSQL operations
 """
-import asyncio
+
 from typing import Any, Dict, List, Optional, Type
 from contextlib import asynccontextmanager
 import asyncpg
@@ -101,7 +101,9 @@ class DatabaseManager:
         # Handle Optional types
         if hasattr(python_type, "__origin__"):
             args = getattr(python_type, "__args__", ())
-            python_type = next((arg for arg in args if arg is not type(None)), python_type)
+            python_type = next(
+                (arg for arg in args if arg is not type(None)), python_type
+            )
 
         type_map = {
             int: "INTEGER",
@@ -124,7 +126,7 @@ class DatabaseManager:
     async def create(self, table_name: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a record"""
         # Remove None values and id
-        data = {k: v for k, v in data.items() if v is not None and k != 'id'}
+        data = {k: v for k, v in data.items() if v is not None and k != "id"}
 
         if not data:
             raise DatabaseException("No data to insert")
@@ -156,7 +158,7 @@ class DatabaseManager:
         table_name: str,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[Dict[str, Any]] = None
+        filters: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """List records with pagination"""
         query = f"SELECT * FROM {table_name}"
@@ -180,14 +182,11 @@ class DatabaseManager:
             return [dict(row) for row in rows]
 
     async def update(
-        self,
-        table_name: str,
-        entity_id: int,
-        updates: Dict[str, Any]
+        self, table_name: str, entity_id: int, updates: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Update a record"""
         # Remove None values and id
-        updates = {k: v for k, v in updates.items() if k != 'id'}
+        updates = {k: v for k, v in updates.items() if k != "id"}
 
         if not updates:
             return await self.get(table_name, entity_id)
@@ -223,9 +222,7 @@ class DatabaseManager:
             return row is not None
 
     async def bulk_create(
-        self,
-        table_name: str,
-        items: List[Dict[str, Any]]
+        self, table_name: str, items: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """Bulk insert records"""
         if not items:
@@ -244,7 +241,9 @@ class DatabaseManager:
 
         return results
 
-    async def count(self, table_name: str, filters: Optional[Dict[str, Any]] = None) -> int:
+    async def count(
+        self, table_name: str, filters: Optional[Dict[str, Any]] = None
+    ) -> int:
         """Count records"""
         query = f"SELECT COUNT(*) FROM {table_name}"
         params = []

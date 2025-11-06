@@ -1,6 +1,7 @@
 """
 Redis cache and pub/sub manager
 """
+
 import json
 from typing import Any, Dict, Optional
 import redis.asyncio as redis
@@ -57,12 +58,7 @@ class CacheManager:
             print(f"Cache get error: {e}")
             return None
 
-    async def set(
-        self,
-        key: str,
-        value: Any,
-        ttl: Optional[int] = None
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in cache"""
         if not self.config.cache_enabled or not self.redis:
             return False
@@ -70,11 +66,7 @@ class CacheManager:
         try:
             ttl = ttl or self.config.cache_ttl
             serialized = json.dumps(serialize_for_json(value))
-            await self.redis.setex(
-                self._make_key(key),
-                ttl,
-                serialized
-            )
+            await self.redis.setex(self._make_key(key), ttl, serialized)
             return True
         except Exception as e:
             print(f"Cache set error: {e}")

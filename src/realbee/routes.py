@@ -1,18 +1,12 @@
 """
 Auto-generated route handlers for CRUD operations
 """
-from typing import List, Optional, Dict, Any, Type
+
+from typing import List, Dict, Any, Type
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect, Query
 from pydantic import BaseModel
 
-from .models import (
-    EventType,
-    SearchRequest,
-    SearchResult,
-    PaginationParams,
-    BulkCreateResponse
-)
-from .exceptions import EntityNotFoundException
+from .models import SearchRequest, BulkCreateResponse
 from .utils import get_entity_name
 
 
@@ -28,11 +22,7 @@ class RouteGenerator:
         """
         self.framework = framework
 
-    def generate_routes(
-        self,
-        entity_type: Type[BaseModel],
-        router: APIRouter
-    ):
+    def generate_routes(self, entity_type: Type[BaseModel], router: APIRouter):
         """
         Generate all CRUD routes for an entity type.
 
@@ -49,7 +39,7 @@ class RouteGenerator:
             f"/{entity_name_plural}",
             response_model=entity_type,
             status_code=201,
-            tags=[entity_name]
+            tags=[entity_name],
         )
         async def create_entity(entity: entity_type):
             """Create a new entity"""
@@ -59,7 +49,7 @@ class RouteGenerator:
         @router.get(
             f"/{entity_name_plural}",
             response_model=List[entity_type],
-            tags=[entity_name]
+            tags=[entity_name],
         )
         async def list_entities(
             skip: int = Query(0, ge=0),
@@ -72,7 +62,7 @@ class RouteGenerator:
         @router.get(
             f"/{entity_name_plural}/{{entity_id}}",
             response_model=entity_type,
-            tags=[entity_name]
+            tags=[entity_name],
         )
         async def get_entity(entity_id: int):
             """Get entity by ID"""
@@ -85,7 +75,7 @@ class RouteGenerator:
         @router.patch(
             f"/{entity_name_plural}/{{entity_id}}",
             response_model=entity_type,
-            tags=[entity_name]
+            tags=[entity_name],
         )
         async def update_entity(entity_id: int, updates: Dict[str, Any]):
             """Update entity"""
@@ -96,9 +86,7 @@ class RouteGenerator:
 
         # DELETE
         @router.delete(
-            f"/{entity_name_plural}/{{entity_id}}",
-            status_code=204,
-            tags=[entity_name]
+            f"/{entity_name_plural}/{{entity_id}}", status_code=204, tags=[entity_name]
         )
         async def delete_entity(entity_id: int):
             """Delete entity"""
@@ -112,7 +100,7 @@ class RouteGenerator:
             f"/{entity_name_plural}/bulk",
             response_model=BulkCreateResponse,
             status_code=201,
-            tags=[entity_name]
+            tags=[entity_name],
         )
         async def bulk_create_entities(entities: List[entity_type]):
             """Bulk create entities"""
@@ -121,10 +109,11 @@ class RouteGenerator:
         # SEARCH (if entity has vector fields)
         metadata = self.framework._metadata.get(entity_name)
         if metadata and metadata.has_search:
+
             @router.post(
                 f"/{entity_name_plural}/search",
                 response_model=List[entity_type],
-                tags=[entity_name]
+                tags=[entity_name],
             )
             async def search_entities(request: SearchRequest):
                 """Multimodal search"""
@@ -140,7 +129,9 @@ class RouteGenerator:
                 while True:
                     # Receive messages from client
                     data = await websocket.receive_json()
-                    await self.framework.ws_manager.handle_client_message(websocket, data)
+                    await self.framework.ws_manager.handle_client_message(
+                        websocket, data
+                    )
 
             except WebSocketDisconnect:
                 self.framework.ws_manager.disconnect(websocket, entity_name)

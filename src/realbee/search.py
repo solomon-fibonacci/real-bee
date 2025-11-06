@@ -1,17 +1,17 @@
 """
 Multimodal search engine using CLIP and FAISS
 """
-import asyncio
-from typing import Any, Dict, List, Optional, Tuple
 
-from .core import FrameworkConfig, IndexStrategy
+from typing import Any, Dict, List, Optional
+
+from .core import FrameworkConfig
 from .exceptions import SearchException
 from .models import SearchRequest, SearchResult
-from .utils import run_in_threadpool
 
 # Optional dependencies - only import if available
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -43,8 +43,10 @@ class SearchEngine:
             # from transformers import CLIPModel, CLIPProcessor
             # self.clip_model = CLIPModel.from_pretrained(f"openai/clip-{self.config.clip_model}")
             # self.clip_processor = CLIPProcessor.from_pretrained(f"openai/clip-{self.config.clip_model}")
-            print(f"SearchEngine initialized (placeholder mode)")
-            print("To enable search, install: pip install faiss-cpu torch transformers pillow")
+            print("SearchEngine initialized (placeholder mode)")
+            print(
+                "To enable search, install: pip install faiss-cpu torch transformers pillow"
+            )
         except Exception as e:
             raise SearchException(f"Failed to initialize search engine: {e}")
 
@@ -86,6 +88,7 @@ class SearchEngine:
         else:
             # Return list instead of numpy array when numpy not available
             import random
+
             return [random.random() for _ in range(self.config.faiss_dimension)]
 
     async def encode_image(self, image_url: str):
@@ -109,6 +112,7 @@ class SearchEngine:
             return np.random.rand(self.config.faiss_dimension).astype(np.float32)
         else:
             import random
+
             return [random.random() for _ in range(self.config.faiss_dimension)]
 
     async def add_to_index(
@@ -116,7 +120,7 @@ class SearchEngine:
         entity_name: str,
         entity_id: int,
         text_fields: Optional[List[str]] = None,
-        image_fields: Optional[List[str]] = None
+        image_fields: Optional[List[str]] = None,
     ):
         """
         Add entity to search index.
@@ -166,9 +170,7 @@ class SearchEngine:
             print(f"Error adding to index: {e}")
 
     async def search(
-        self,
-        entity_name: str,
-        request: SearchRequest
+        self, entity_name: str, request: SearchRequest
     ) -> List[SearchResult]:
         """
         Perform multimodal search.
@@ -212,7 +214,7 @@ class SearchEngine:
             if HAS_NUMPY:
                 vectors = np.array(index_data["vectors"])
                 similarities = np.dot(vectors, query_vector)
-                top_k_indices = np.argsort(similarities)[::-1][:request.k]
+                top_k_indices = np.argsort(similarities)[::-1][: request.k]
             else:
                 # Manual dot product and sorting without numpy
                 vectors = index_data["vectors"]
@@ -223,18 +225,20 @@ class SearchEngine:
                 top_k_indices = sorted(
                     range(len(similarities)),
                     key=lambda i: similarities[i],
-                    reverse=True
-                )[:request.k]
+                    reverse=True,
+                )[: request.k]
 
             results = []
             for rank, idx in enumerate(top_k_indices):
                 entity_id = self.id_maps[entity_name][idx]
                 score = float(similarities[idx])
-                results.append(SearchResult(
-                    entity={"id": entity_id},  # Will be filled by framework
-                    score=score,
-                    rank=rank + 1
-                ))
+                results.append(
+                    SearchResult(
+                        entity={"id": entity_id},  # Will be filled by framework
+                        score=score,
+                        rank=rank + 1,
+                    )
+                )
 
             return results
 
@@ -265,7 +269,7 @@ class SearchEngine:
         entity_name: str,
         entity_id: int,
         text_fields: Optional[List[str]] = None,
-        image_fields: Optional[List[str]] = None
+        image_fields: Optional[List[str]] = None,
     ):
         """Update entity in index"""
         await self.remove_from_index(entity_name, entity_id)
@@ -280,5 +284,5 @@ class SearchEngine:
             "exists": True,
             "size": len(self.id_maps.get(entity_name, [])),
             "dimension": self.config.faiss_dimension,
-            "index_type": self.config.faiss_index_type
+            "index_type": self.config.faiss_index_type,
         }

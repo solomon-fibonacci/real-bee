@@ -1,9 +1,9 @@
 """
 Utility functions for real-bee framework
 """
+
 import asyncio
 import hashlib
-import json
 from typing import Any, Dict, List, Optional, Type
 from datetime import datetime
 from pydantic import BaseModel
@@ -14,14 +14,14 @@ def to_snake_case(text: str) -> str:
     result = []
     for i, char in enumerate(text):
         if char.isupper() and i > 0:
-            result.append('_')
+            result.append("_")
         result.append(char.lower())
-    return ''.join(result)
+    return "".join(result)
 
 
 def get_table_name(entity_type: Type[BaseModel]) -> str:
     """Generate table name from entity type"""
-    return to_snake_case(entity_type.__name__) + 's'
+    return to_snake_case(entity_type.__name__) + "s"
 
 
 def get_entity_name(entity_type: Type[BaseModel]) -> str:
@@ -29,14 +29,18 @@ def get_entity_name(entity_type: Type[BaseModel]) -> str:
     return entity_type.__name__
 
 
-def generate_cache_key(prefix: str, entity_name: str, entity_id: Optional[int] = None) -> str:
+def generate_cache_key(
+    prefix: str, entity_name: str, entity_id: Optional[int] = None
+) -> str:
     """Generate cache key"""
     if entity_id is not None:
         return f"{prefix}:{entity_name}:{entity_id}"
     return f"{prefix}:{entity_name}"
 
 
-def generate_event_id(entity_name: str, entity_id: Optional[int], timestamp: datetime) -> str:
+def generate_event_id(
+    entity_name: str, entity_id: Optional[int], timestamp: datetime
+) -> str:
     """Generate unique event ID"""
     data = f"{entity_name}:{entity_id}:{timestamp.isoformat()}"
     return hashlib.md5(data.encode()).hexdigest()

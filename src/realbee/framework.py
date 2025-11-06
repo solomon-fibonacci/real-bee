@@ -1,6 +1,7 @@
 """
 Main CRUDFramework class - the heart of real-bee
 """
+
 import asyncio
 from typing import Type, Optional, List, Dict, Any
 from contextlib import asynccontextmanager
@@ -15,18 +16,13 @@ from .events import EventBus
 from .search import SearchEngine
 from .websocket import WebSocketManager
 from .routes import RouteGenerator
-from .models import (
-    EventType,
-    SearchRequest,
-    BulkCreateResponse,
-    EntityMetadata
-)
+from .models import EventType, SearchRequest, BulkCreateResponse, EntityMetadata
 from .exceptions import EntityNotFoundException, ValidationException
 from .utils import (
     get_entity_name,
     get_table_name,
     get_vector_fields,
-    generate_cache_key
+    generate_cache_key,
 )
 
 
@@ -58,11 +54,10 @@ class CRUDFramework:
         self.search_engine = SearchEngine(config)
         self.ws_manager = WebSocketManager(
             heartbeat_interval=config.ws_heartbeat_interval,
-            max_connections=config.ws_max_connections
+            max_connections=config.ws_max_connections,
         )
         self.event_bus = EventBus(
-            self.cache,
-            event_history_size=config.event_history_size
+            self.cache, event_history_size=config.event_history_size
         )
         self.route_generator = RouteGenerator(self)
 
@@ -133,7 +128,7 @@ class CRUDFramework:
         self,
         entity_type: Type[BaseModel],
         hooks: Optional[EntityHooks] = None,
-        router: Optional[APIRouter] = None
+        router: Optional[APIRouter] = None,
     ):
         """
         Register an entity type and auto-generate CRUD endpoints.
@@ -156,7 +151,7 @@ class CRUDFramework:
             table_name=table_name,
             vector_fields=vector_fields,
             has_search=len(vector_fields) > 0,
-            hooks=hooks or EntityHooks()
+            hooks=hooks or EntityHooks(),
         )
 
         # Create database table
@@ -183,11 +178,7 @@ class CRUDFramework:
 
         print(f"✓ {entity_name} registered")
 
-    async def create(
-        self,
-        entity_name: str,
-        entity: BaseModel
-    ) -> BaseModel:
+    async def create(self, entity_name: str, entity: BaseModel) -> BaseModel:
         """
         Create a new entity.
 
@@ -218,48 +209,34 @@ class CRUDFramework:
             text_fields = [
                 getattr(created_entity, field)
                 for field in metadata.vector_fields
-                if not field.endswith('_url')
+                if not field.endswith("_url")
             ]
             image_fields = [
                 getattr(created_entity, field)
                 for field in metadata.vector_fields
-                if field.endswith('_url')
+                if field.endswith("_url")
             ]
             asyncio.create_task(
                 self.search_engine.add_to_index(
-                    entity_name,
-                    result['id'],
-                    text_fields,
-                    image_fields
+                    entity_name, result["id"], text_fields, image_fields
                 )
             )
 
         # Cache
         cache_key = generate_cache_key(
-            self.config.cache_prefix,
-            entity_name,
-            result['id']
+            self.config.cache_prefix, entity_name, result["id"]
         )
         await self.cache.set(cache_key, result)
 
         # Emit event
-        await self.event_bus.emit(
-            entity_name,
-            EventType.CREATED,
-            result,
-            result['id']
-        )
+        await self.event_bus.emit(entity_name, EventType.CREATED, result, result["id"])
 
         # After create hook
         await hooks.after_create(created_entity)
 
         return created_entity
 
-    async def get(
-        self,
-        entity_name: str,
-        entity_id: int
-    ) -> Optional[BaseModel]:
+    async def get(self, entity_name: str, entity_id: int) -> Optional[BaseModel]:
         """
         Get entity by ID.
 
@@ -273,11 +250,7 @@ class CRUDFramework:
         metadata = self._get_metadata(entity_name)
 
         # Try cache first
-        cache_key = generate_cache_key(
-            self.config.cache_prefix,
-            entity_name,
-            entity_id
-        )
+        cache_key = generate_cache_key(self.config.cache_prefix, entity_name, entity_id)
         cached = await self.cache.get(cache_key)
         if cached:
             return metadata.entity_type(**cached)
@@ -297,7 +270,7 @@ class CRUDFramework:
         entity_name: str,
         skip: int = 0,
         limit: int = 100,
-        filters: Optional[Dict[str, Any]] = None
+        filters: Optional[Dict[str, Any]] = None,
     ) -> List[BaseModel]:
         """
         List entities with pagination.
@@ -314,19 +287,13 @@ class CRUDFramework:
         metadata = self._get_metadata(entity_name)
 
         results = await self.db.list(
-            metadata.table_name,
-            skip=skip,
-            limit=limit,
-            filters=filters
+            metadata.table_name, skip=skip, limit=limit, filters=filters
         )
 
         return [metadata.entity_type(**r) for r in results]
 
     async def update(
-        self,
-        entity_name: str,
-        entity_id: int,
-        updates: Dict[str, Any]
+        self, entity_name: str, entity_id: int, updates: Dict[str, Any]
     ) -> Optional[BaseModel]:
         """
         Update an entity.
@@ -362,48 +329,32 @@ class CRUDFramework:
             text_fields = [
                 getattr(updated_entity, field)
                 for field in metadata.vector_fields
-                if not field.endswith('_url')
+                if not field.endswith("_url")
             ]
             image_fields = [
                 getattr(updated_entity, field)
                 for field in metadata.vector_fields
-                if field.endswith('_url')
+                if field.endswith("_url")
             ]
             asyncio.create_task(
                 self.search_engine.update_in_index(
-                    entity_name,
-                    entity_id,
-                    text_fields,
-                    image_fields
+                    entity_name, entity_id, text_fields, image_fields
                 )
             )
 
         # Invalidate cache
-        cache_key = generate_cache_key(
-            self.config.cache_prefix,
-            entity_name,
-            entity_id
-        )
+        cache_key = generate_cache_key(self.config.cache_prefix, entity_name, entity_id)
         await self.cache.delete(cache_key)
 
         # Emit event
-        await self.event_bus.emit(
-            entity_name,
-            EventType.UPDATED,
-            result,
-            entity_id
-        )
+        await self.event_bus.emit(entity_name, EventType.UPDATED, result, entity_id)
 
         # After update hook
         await hooks.after_update(updated_entity)
 
         return updated_entity
 
-    async def delete(
-        self,
-        entity_name: str,
-        entity_id: int
-    ) -> bool:
+    async def delete(self, entity_name: str, entity_id: int) -> bool:
         """
         Delete an entity.
 
@@ -439,19 +390,12 @@ class CRUDFramework:
             )
 
         # Invalidate cache
-        cache_key = generate_cache_key(
-            self.config.cache_prefix,
-            entity_name,
-            entity_id
-        )
+        cache_key = generate_cache_key(self.config.cache_prefix, entity_name, entity_id)
         await self.cache.delete(cache_key)
 
         # Emit event
         await self.event_bus.emit(
-            entity_name,
-            EventType.DELETED,
-            {"id": entity_id},
-            entity_id
+            entity_name, EventType.DELETED, {"id": entity_id}, entity_id
         )
 
         # After delete hook
@@ -460,9 +404,7 @@ class CRUDFramework:
         return True
 
     async def bulk_create(
-        self,
-        entity_name: str,
-        entities: List[BaseModel]
+        self, entity_name: str, entities: List[BaseModel]
     ) -> BulkCreateResponse:
         """
         Bulk create entities.
@@ -474,8 +416,6 @@ class CRUDFramework:
         Returns:
             Bulk create response with results and errors
         """
-        metadata = self._get_metadata(entity_name)
-
         created = []
         errors = []
 
@@ -484,31 +424,17 @@ class CRUDFramework:
                 result = await self.create(entity_name, entity)
                 created.append(result.model_dump())
             except Exception as e:
-                errors.append({
-                    "entity": entity.model_dump(),
-                    "error": str(e)
-                })
+                errors.append({"entity": entity.model_dump(), "error": str(e)})
 
         # Emit bulk created event
         if created:
             await self.event_bus.emit(
-                entity_name,
-                EventType.BULK_CREATED,
-                {"count": len(created)},
-                None
+                entity_name, EventType.BULK_CREATED, {"count": len(created)}, None
             )
 
-        return BulkCreateResponse(
-            created=len(created),
-            entities=created,
-            errors=errors
-        )
+        return BulkCreateResponse(created=len(created), entities=created, errors=errors)
 
-    async def search(
-        self,
-        entity_name: str,
-        request: SearchRequest
-    ) -> List[BaseModel]:
+    async def search(self, entity_name: str, request: SearchRequest) -> List[BaseModel]:
         """
         Perform multimodal search.
 
@@ -530,7 +456,7 @@ class CRUDFramework:
         # Fetch full entities
         entities = []
         for result in results:
-            entity_id = result.entity['id']
+            entity_id = result.entity["id"]
             entity = await self.get(entity_name, entity_id)
             if entity:
                 entities.append(entity)
