@@ -11,13 +11,6 @@ jobs:
     name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
 
-    # Services disabled - unit tests use mocks, integration tests can be added later
-    # services:
-    #   postgres:
-    #     image: postgres:15-alpine
-    #   redis:
-    #     image: redis:7-alpine
-
     strategy:
       fail-fast: false
       matrix:
@@ -33,46 +26,19 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -e ".[dev]"
 
-      - name: Run unit tests
+      - name: Run unit tests only (fast)
         run: |
-          pytest tests/unit -v --tb=short
+          pytest tests/unit -v --tb=short --no-cov
 
-      - name: Run integration tests (services not available)
+      - name: Run linting
         run: |
-          echo "⏭️  Integration tests skipped - require PostgreSQL/Redis services"
-        continue-on-error: true
-
-      - name: Run E2E tests (services not available)
-        run: |
-          echo "⏭️  E2E tests skipped - require PostgreSQL/Redis services"
-        continue-on-error: true
-
-      - name: Generate coverage report (optional)
-        run: |
-          echo "Coverage reporting disabled for now - tests run without coverage"
-          echo "To enable: add --cov=realbee to pytest commands"
-        continue-on-error: true
-
-      - name: Upload coverage to Codecov
-        if: false  # Disabled - no coverage files generated
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-${{ matrix.python-version }}
-          fail_ci_if_error: false
-
-      - name: Upload coverage HTML report
-        if: false  # Disabled - no coverage files generated
-        uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: htmlcov/
+          ruff check src/
+          black --check src/
 
   lint:
     name: Code Quality
